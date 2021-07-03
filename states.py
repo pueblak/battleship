@@ -2,7 +2,7 @@ import numpy as np
 
 
 class ShipState:
-    def __init__(self, x=0, y=0, length=0, isVertical=False, isSunk=False):
+    def __init__(self, x=0, y=0, isVertical=False, length=0, isSunk=False):
         self.x = x
         self.y = y
         self.length = length
