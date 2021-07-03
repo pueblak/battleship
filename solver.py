@@ -27,6 +27,8 @@ default_score = np.array([
 ], dtype=np.float64)
 default_score /= np.sum(default_score)
 
+board_list = pickle.load(open("sample_65642.dat"))["list"]
+
 
 length5_configs = [
     (x, y, v) for x in range(10)
@@ -96,6 +98,11 @@ def board_config_generator(board, ships, shuffle=False):
                 random.shuffle(back)
             configs[index] = front + back
     len2, len3a, len3b, len4, len5 = configs
+    # estimate = len(len2) * len(len3a) * len(len3b) * len(len4) * len(len5)
+    # if estimate > 2 ** 18:
+    #     for board in board_list:
+    #         yield board, None
+    #     return
     count = 0
     for (xA, yA, vA) in len2:
         if count > LIMIT:
@@ -154,11 +161,10 @@ def generate_random_board():
     return board
 
 
-def score_cells(board, ships):
+def score_cells(board):
     cells = np.zeros((10, 10))
-    board_gen = board_config_generator(board, ships, LIMIT < 30000000000)
     done = False
-    for test, _ in board_gen:
+    for test in board_list:
         if test is None:
             break
         if not done:
@@ -166,11 +172,9 @@ def score_cells(board, ships):
             done = True
         if np.any((test * board) < 0):
             continue
-        test[test > 0] = 1
-        test[test < 0] = 0
-        cells += test
-    if np.sum(cells) >= LIMIT * 17:
-        cells += default_score
+        reduced = test + 1
+        reduced[reduced > 0] = 1
+        cells += reduced
     for x in range(10):
         for y in range(10):
             if board[x, y] != 0:
@@ -181,13 +185,6 @@ def score_cells(board, ships):
 
 
 def create_random_samples():
-    board_gen = board_config_generator(np.zeros((10, 10)), [
-        ShipState(length=2),
-        ShipState(length=3),
-        ShipState(length=3),
-        ShipState(length=4),
-        ShipState(length=5)
-    ], True)
     sample = {
         "total": np.zeros((10, 10), dtype=np.int32),
         "list": []

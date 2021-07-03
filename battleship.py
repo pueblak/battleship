@@ -10,20 +10,7 @@ from solver import *
 from states import ShipState, GameState
 
 
-def convert(coord):
-    letter = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]
-    return letter[coord[0]] + str(coord[1]+1)
-
-
 if __name__ == "__main__":
-    create_random_samples()
-    create_random_samples()
-    create_random_samples()
-    create_random_samples()
-    create_random_samples()
-    create_random_samples()
-    create_random_samples()
-    exit()
     shipsA = [
         ShipState(0, 5, 2, True),
         ShipState(1, 0, 3, True),
