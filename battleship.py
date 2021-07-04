@@ -10,11 +10,6 @@ from solver import *
 from states import ShipState, GameState
 
 
-def convert(coord):
-    letter = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]
-    return letter[coord[0]] + str(coord[1]+1)
-
-
 if __name__ == "__main__":
     shipsA = [
         ShipState(0, 5, 2, True),
