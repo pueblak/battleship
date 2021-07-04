@@ -9,21 +9,24 @@ import numpy as np
 from solver import *
 from states import ShipState, GameState
 
-
 if __name__ == "__main__":
+    create_random_samples(2**10)
+    #fix_sample("sample_1094.dat")
+
+if __name__ != "__main__":
     shipsA = [
-        ShipState(0, 5, 2, True),
-        ShipState(1, 0, 3, True),
-        ShipState(9, 5, 3, True),
-        ShipState(3, 4, 4),
-        ShipState(4, 0, 5)
+        ShipState(0, 5, True, 2),
+        ShipState(1, 0, True, 3),
+        ShipState(9, 5, True, 3),
+        ShipState(3, 4, length=4),
+        ShipState(4, 0, length=5)
     ]
     shipsB = [
-        ShipState(5, 5, 2, True),
-        ShipState(1, 0, 3),
-        ShipState(1, 7, 3),
-        ShipState(2, 2, 4, True),
-        ShipState(4, 9, 5)
+        ShipState(5, 5, True, 2),
+        ShipState(1, 0, length=3),
+        ShipState(1, 7, length=3),
+        ShipState(2, 2, True, 4),
+        ShipState(4, 9, length=5)
     ]
     scoreA, scoreB = 30093975536, 30093975536
     bestA, bestB = ["E5", "E6", "F5", "F6"], ["E5", "E6", "F5", "F6"]

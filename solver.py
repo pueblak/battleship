@@ -5,6 +5,7 @@ import pickle
 import numpy as np
 from sys import stdout
 import random
+from os import listdir
 
 from tqdm import tqdm
 
@@ -27,7 +28,7 @@ default_score = np.array([
 ], dtype=np.float64)
 default_score /= np.sum(default_score)
 
-board_list = pickle.load(open("sample_65642.dat"))["list"]
+board_list = pickle.load(open("board/sample_65642.dat", "rb"))["list"]
 
 
 length5_configs = [
@@ -161,6 +162,31 @@ def generate_random_board():
     return board
 
 
+def reconstruct_ships(board):
+    ships = []
+    visited = np.full((10, 10), False)
+    for x in range(9):
+        for y in range(9):
+            if len(ships) == 5:
+                ships.sort(key=lambda x: x.length)
+                return ships
+            elif visited[x, y]:
+                continue
+            length = board[x, y]
+            if length > 0:
+                vertical = True
+                if x <= 10 - length:
+                    if length == 3:
+                        if board[x+1, y] == board[x+2, y] == 3:
+                            vertical = False
+                    elif board[x+1, y] == length:
+                        vertical = False
+                ship = ShipState(x, y, vertical, length)
+                for cell in ship.cells:
+                    visited[cell] = 1
+    return None
+
+
 def score_cells(board):
     cells = np.zeros((10, 10))
     done = False
@@ -184,23 +210,22 @@ def score_cells(board):
     return int(np.sum(cells)), best_cell  # TODO: CHANGE LATER
 
 
-def create_random_samples():
+def create_random_samples(minimum):
     sample = {
         "total": np.zeros((10, 10), dtype=np.int32),
         "list": []
     }
-    minimum = 2 ** 16.4
-    max_skips = 2 ** 20
+    max_skips = 2 ** 14
     skips = 0
     progress = tqdm(ncols=128, total=max_skips, position=0, ascii='_...:::!!!|', postfix={"TOTAL": len(sample["list"])})
     while skips < max_skips:
         options = []
         for _ in range(8):
             options.append(generate_random_board())
-        result = [(0, None) for _ in options]
+        result = [(2**32, None) for _ in options]
         for index in range(len(options)):
             option = options[index]
-            reduced = option[:, :]
+            reduced = np.copy(option)
             reduced[reduced > 0] = 1
             reduced[reduced < 0] = 0
             combo = reduced + sample["total"]
@@ -222,4 +247,11 @@ def create_random_samples():
     print(sample["total"])
     print(len(sample["list"]))
     print()
-    pickle.dump(sample, open("board/sample_"+str(len(sample["list"]))+".dat", "wb"))
+    pickle.dump(sample, open("board/large/sample_"+str(len(sample["list"]))+".dat", "wb"))
+
+
+def fix_sample(filename):
+    sample = pickle.load(open("board/"+filename, "rb"))
+    sample["ships"] = []
+    for board in sample["list"]:
+        sample["ships"].append(reconstruct_ships(board))
