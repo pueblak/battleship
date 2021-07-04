@@ -27,7 +27,7 @@ default_score = np.array([
 ], dtype=np.float64)
 default_score /= np.sum(default_score)
 
-board_list = pickle.load(open("sample_65642.dat"))["list"]
+board_list = pickle.load(open("board/sample_65642.dat", "rb"))["list"]
 
 
 length5_configs = [
@@ -98,11 +98,11 @@ def board_config_generator(board, ships, shuffle=False):
                 random.shuffle(back)
             configs[index] = front + back
     len2, len3a, len3b, len4, len5 = configs
-    # estimate = len(len2) * len(len3a) * len(len3b) * len(len4) * len(len5)
-    # if estimate > 2 ** 18:
-    #     for board in board_list:
-    #         yield board, None
-    #     return
+    estimate = len(len2) * len(len3a) * len(len3b) * len(len4) * len(len5)
+    if estimate > 2 ** 18:
+        for board, ships in board_list:
+            yield board, None
+        return
     count = 0
     for (xA, yA, vA) in len2:
         if count > LIMIT:
@@ -143,6 +143,7 @@ def board_config_generator(board, ships, shuffle=False):
 
 def generate_random_board():
     board = np.ones((10, 10), dtype=np.int8) * -1
+    shipA, shipB, shipC, shipD, shipE = None, None, None, None, None
     while True:
         shipA = ShipState(*(random.choice(length2_configs)), length=2)
         shipB = ShipState(*(random.choice(length3_configs)), length=3)
@@ -158,13 +159,13 @@ def generate_random_board():
             board = np.ones((10, 10), dtype=np.int8) * -1
             continue
         break
-    return board
+    return board, [shipA, shipB, shipC, shipD, shipE]
 
 
 def score_cells(board):
     cells = np.zeros((10, 10))
     done = False
-    for test in board_list:
+    for test, ships in board_list:
         if test is None:
             break
         if not done:
@@ -180,7 +181,7 @@ def score_cells(board):
             if board[x, y] != 0:
                 cells[x, y] = 0
     max_score = np.max(cells)
-    best_cell = [(x, y) for x in range(10) for y in range(10) if cells[x, y] >= max_score * 0.9]
+    best_cell = [(x, y) for x in range(10) for y in range(10) if cells[x, y] == max_score]
     return int(np.sum(cells)), best_cell  # TODO: CHANGE LATER
 
 
@@ -189,37 +190,38 @@ def create_random_samples():
         "total": np.zeros((10, 10), dtype=np.int32),
         "list": []
     }
-    minimum = 2 ** 16.4
-    max_skips = 2 ** 20
+    minimum = 2 ** 16.5
+    max_skips = 2 ** 18
     skips = 0
-    progress = tqdm(ncols=128, total=max_skips, position=0, ascii='_...:::!!!|', postfix={"TOTAL": len(sample["list"])})
+    progress = tqdm(ncols=60, total=max_skips, position=0, ascii='_...:::!!!|', postfix={"TOTAL": len(sample["list"])}, leave=True)
     while skips < max_skips:
         options = []
         for _ in range(8):
             options.append(generate_random_board())
         result = [(0, None) for _ in options]
         for index in range(len(options)):
-            option = options[index]
+            option, ships = options[index]
             reduced = option[:, :]
             reduced[reduced > 0] = 1
             reduced[reduced < 0] = 0
             combo = reduced + sample["total"]
             diff = np.sum((default_score - (combo / np.sum(combo)))**2)
-            result[index] = (diff, option)
+            result[index] = (diff, option, ships)
         result.sort(key=lambda x: x[0])
-        selected = (result[0][1]).astype(np.int32)
+        selected = result[0]
         if len(sample["list"]) > minimum:
-            if result[0][0] > np.sum((default_score - (sample["total"].astype(np.float64) / np.sum(sample["total"])))**2):
+            if selected[0] > np.sum((default_score - (sample["total"].astype(np.float64) / np.sum(sample["total"])))**2):
                 skips += 1
                 progress.update(1)
                 continue
         skips = 0
         progress.reset()
         progress.set_postfix({"TOTAL": len(sample["list"])})
-        sample["list"].append(selected)
-        sample["total"] += selected
+        sample["list"].append((selected[1], selected[2]))
+        sample["total"] += selected[1]
     progress.close()
     print(sample["total"])
     print(len(sample["list"]))
     print()
     pickle.dump(sample, open("board/sample_"+str(len(sample["list"]))+".dat", "wb"))
+
